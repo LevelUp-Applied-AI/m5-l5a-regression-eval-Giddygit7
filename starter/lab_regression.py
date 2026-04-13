@@ -7,6 +7,7 @@ Petra Telecom customer churn dataset.
 Run: python lab_regression.py
 """
 
+import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
@@ -20,12 +21,15 @@ from sklearn.metrics import (classification_report, confusion_matrix,
 import matplotlib.pyplot as plt
 
 
-def load_data(filepath="data/telecom_churn.csv"):
+def load_data(filepath=None):
     """Load the telecom churn dataset.
 
     Returns:
         DataFrame with all columns.
     """
+    if filepath is None:
+        # Try root path first, then nested path for local running
+        filepath = "data/telecom_churn.csv" if os.path.exists("data/telecom_churn.csv") else "starter/data/telecom_churn.csv"
     return pd.read_csv(filepath)
 
 
@@ -108,8 +112,7 @@ def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
     
     # Visual display (Task 3)
     ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
-    plt.show()
-    
+
     return {
         'accuracy': accuracy_score(y_test, y_pred),
         'precision': precision_score(y_test, y_pred),
@@ -165,37 +168,38 @@ if __name__ == "__main__":
         print(f"Churn Distribution:\n{df['churned'].value_counts(normalize=True)}")
         print("-" * 30)
 
-        numeric_features = ["tenure", "monthly_charges", "total_charges",
+        # Define common features
+        features = ["tenure", "monthly_charges", "total_charges",
                            "num_support_calls", "senior_citizen",
                            "has_partner", "has_dependents"]
 
         # --- TASK 2: Split with Stratification Check ---
-        df_cls = df[numeric_features + ["churned"]].dropna()
+        df_cls = df[features + ["churned"]].dropna()
         X_train, X_test, y_train, y_test = split_data(df_cls, "churned")
         
-        print(f"--- Task 2: Split Confirmation ---")
+        print("--- Task 2: Split Confirmation ---")
         print(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
         print(f"Train Churn Rate: {y_train.mean():.4f}")
         print(f"Test Churn Rate: {y_test.mean():.4f}")
         print("-" * 30)
 
-        # --- TASK 3: Classification ---
+        # --- TASK 3: Classification Evaluation ---
         pipe = build_logistic_pipeline()
         metrics = evaluate_classifier(pipe, X_train, X_test, y_train, y_test)
-       
+        print(f"Logistic Regression Metrics: {metrics}")
+        plt.show() # Call show once here so it doesn't block evaluation logic
 
         # --- TASK 6: Cross-Validation ---
-        print(f"\n--- Task 6: Cross-Validation ---")
+        print("\n--- Task 6: Cross-Validation ---")
         scores = run_cross_validation(pipe, X_train, y_train)
         for i, score in enumerate(scores):
             print(f"Fold {i+1} Accuracy: {score:.4f}")
         print(f"Overall CV Accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")
         print("-" * 30)
 
-        # --- TASK 4 & 5: Regression & Lasso ---
-        df_reg = df[["tenure", "total_charges", "num_support_calls",
-                     "senior_citizen", "has_partner", "has_dependents",
-                     "monthly_charges"]].dropna()
+        # --- TASK 4 & 5: Regression (Ridge vs Lasso) ---
+        # For regression, monthly_charges is the target, so we use other features
+        df_reg = df[features].dropna() 
         X_tr, X_te, y_tr, y_te = split_data(df_reg, "monthly_charges")
         
         ridge_pipe = build_ridge_pipeline()
@@ -204,14 +208,17 @@ if __name__ == "__main__":
 
         lasso_pipe = build_lasso_pipeline()
         lasso_pipe.fit(X_tr, y_tr)
-        ridge_model = ridge_pipe.named_steps['ridge']
-        lasso_model = lasso_pipe.named_steps['lasso']
+        
+        # Inspect coefficients from the fitted models within the pipelines
+        r_coefs = ridge_pipe.named_steps['ridge'].coef_
+        l_coefs = lasso_pipe.named_steps['lasso'].coef_
         
         print("\n--- Task 5: Regularization Comparison ---")
         print(f"{'Feature':<20} | {'Ridge Coef':>10} | {'Lasso Coef':>10}")
         print("-" * 46)
-        for name, r_coef, l_coef in zip(X_tr.columns, ridge_model.coef_, lasso_model.coef_):
-            print(f"{name:<20} | {r_coef:10.4f} | {l_coef:10.4f}")
+        for name, r_c, l_c in zip(X_tr.columns, r_coefs, l_coefs):
+            print(f"{name:<20} | {r_c:10.4f} | {l_c:10.4f}")
+        print("-" * 46)
 
         # Final Task 7 Summary (Professional Comment)
         """
