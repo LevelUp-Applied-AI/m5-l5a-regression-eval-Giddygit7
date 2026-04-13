@@ -8,7 +8,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "starter"))
 
-from lab_regression import (load_data, split_data, build_logistic_pipeline,
+from starter.lab_regression import (load_data, split_data, build_logistic_pipeline,
                             build_ridge_pipeline, evaluate_classifier,
                             evaluate_regressor, run_cross_validation)
 
