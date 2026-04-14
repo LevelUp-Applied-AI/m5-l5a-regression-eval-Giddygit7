@@ -6,9 +6,10 @@ import numpy as np
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "starter"))
+# This ensures that 'starter' is treated as a package regardless of the working directory
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from lab_regression import (load_data, split_data, build_logistic_pipeline,
+from starter.lab_regression import (load_data, split_data, build_logistic_pipeline,
                             build_ridge_pipeline, evaluate_classifier,
                             evaluate_regressor, run_cross_validation)
 
